@@ -1,6 +1,6 @@
 import type { AnalyticsSettings } from './types';
 
-const ANALYTICS_STORAGE_KEY = 'opcode-analytics-settings';
+const ANALYTICS_STORAGE_KEY = 'ishinex-analytics-settings';
 
 export class ConsentManager {
   private static instance: ConsentManager;

@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "opcode",
+      "name": "ishinex",
       "dependencies": {
         "@hookform/resolvers": "^3.9.1",
         "@radix-ui/react-dialog": "^1.1.4",

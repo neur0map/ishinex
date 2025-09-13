@@ -9,21 +9,21 @@
   <key>CFBundleShortVersionString</key>
   <string>0.2.1</string>
   <key>CFBundleName</key>
-  <string>opcode</string>
+  <string>ishinex</string>
   <key>CFBundleDisplayName</key>
-  <string>opcode</string>
+  <string>ishinex</string>
   <key>CFBundleIdentifier</key>
-  <string>opcode.asterisk.so</string>
+  <string>com.neur0map.ishinex</string>
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
       <key>CFBundleTypeName</key>
-      <string>opcode Agent</string>
+      <string>ishinex Agent</string>
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleTypeExtensions</key>
       <array>
-        <string>opcode.json</string>
+        <string>ishinex.json</string>
       </array>
       <key>CFBundleTypeIconFile</key>
       <string>icon.icns</string>
@@ -32,12 +32,12 @@
     </dict>
   </array>
   <key>NSAppleEventsUsageDescription</key>
-  <string>opcode needs to send Apple Events to other applications.</string>
+  <string>ishinex needs to send Apple Events to other applications.</string>
   <key>NSAppleScriptEnabled</key>
   <true/>
   <key>NSCameraUsageDescription</key>
-  <string>opcode needs camera access for capturing images for AI processing.</string>
+  <string>ishinex needs camera access for capturing images for AI processing.</string>
   <key>NSMicrophoneUsageDescription</key>
-  <string>opcode needs microphone access for voice input features.</string>
+  <string>ishinex needs microphone access for voice input features.</string>
 </dict>
 </plist>

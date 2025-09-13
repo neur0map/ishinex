@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "opcode",
+  "productName": "ishinex",
   "version": "0.2.1",
-  "identifier": "opcode.asterisk.so",
+  "identifier": "com.neur0map.ishinex",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "opcode",
+        "title": "ishinex",
         "width": 800,
         "height": 600,
         "decorations": true,
@@ -65,10 +65,10 @@
     ],
     "resources": [],
     "externalBin": [],
-    "copyright": "© 2025 Asterisk. All rights reserved.",
+    "copyright": "© 2025 neur0map. All rights reserved.",
     "category": "DeveloperTool",
     "shortDescription": "GUI app and Toolkit for Claude Code",
-    "longDescription": "opcode is a comprehensive GUI application and toolkit for working with Claude Code, providing an intuitive interface for AI-assisted development.",
+    "longDescription": "ishinex is a comprehensive GUI application and toolkit for working with Claude Code, providing an intuitive interface for AI-assisted development.",
     "linux": {
       "appimage": {
         "bundleMediaFramework": true
