@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src-tauri/icons/ishinex-logo.png" alt="ISHINEX" width="360" />
+</p>
+
 # ishinex
 
 A GUI application and toolkit for Claude Code.
