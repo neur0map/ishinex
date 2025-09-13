@@ -243,6 +243,9 @@ function AppContent() {
                   <span className="rotating-symbol"></span>
                   Welcome to ishinex
                 </h1>
+                <div className="mt-2">
+                  <span className="accent-warm">イシネックス</span>
+                </div>
               </motion.div>
 
               {/* Navigation Cards */}

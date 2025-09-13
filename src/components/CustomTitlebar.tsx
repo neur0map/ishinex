@@ -75,7 +75,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
   return (
     <TooltipProvider>
     <div 
-      className="relative z-[200] h-11 bg-background/95 backdrop-blur-sm flex items-center justify-between select-none border-b border-border/50 tauri-drag"
+      className="titlebar relative z-[200] h-11 bg-background/95 backdrop-blur-sm flex items-center justify-between select-none border-b border-border/50 tauri-drag"
       data-tauri-drag-region
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -145,7 +145,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
                 onClick={onAgentsClick}
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.15 }}
-                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors tauri-no-drag"
+                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground warm-hover transition-colors tauri-no-drag"
               >
                 <Bot size={16} />
               </motion.button>
@@ -158,7 +158,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
                 onClick={onUsageClick}
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.15 }}
-                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors tauri-no-drag"
+                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground warm-hover transition-colors tauri-no-drag"
               >
                 <BarChart3 size={16} />
               </motion.button>
@@ -177,7 +177,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
                 onClick={onSettingsClick}
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.15 }}
-                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors tauri-no-drag"
+                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground warm-hover transition-colors tauri-no-drag"
               >
                 <Settings size={16} />
               </motion.button>
@@ -191,7 +191,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.15 }}
-                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-1"
+                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground warm-hover transition-colors flex items-center gap-1"
               >
                 <MoreVertical size={16} />
               </motion.button>

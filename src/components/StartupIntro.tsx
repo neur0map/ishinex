@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import ishinexLogo from "../../src-tauri/icons/icon.png";
+import ishinexLogo from "../../src-tauri/icons/ishinex-logo.png";
 import type { CSSProperties } from "react";
 
 /**
@@ -26,11 +26,13 @@ export function StartupIntro({ visible }: { visible: boolean }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.25 }}
-            style={{
-              background:
-                "radial-gradient(800px circle at 50% 55%, var(--color-primary)/8, transparent 65%)",
-              pointerEvents: "none",
-            } as CSSProperties}
+            style={
+              {
+                background:
+                  "radial-gradient(800px circle at 50% 55%, var(--color-primary)/8, transparent 65%)",
+                pointerEvents: "none",
+              } as CSSProperties
+            }
           />
 
           {/* Subtle vignette */}
@@ -49,7 +51,6 @@ export function StartupIntro({ visible }: { visible: boolean }) {
             transition={{ type: "spring", stiffness: 280, damping: 22 }}
             className="relative flex flex-col items-center justify-center gap-1"
           >
-
             {/* ishinex logo slides left; brand text reveals to the right */}
             <div className="relative flex items-center justify-center">
               {/* Logo wrapper that gently slides left */}
@@ -67,9 +68,14 @@ export function StartupIntro({ visible }: { visible: boolean }) {
                 />
                 <motion.img
                   src={ishinexLogo}
-                  alt="ishinex"
+                  alt="イシネックス"
                   className="h-20 w-20 rounded-lg shadow-sm"
-                  transition={{ repeat: Infinity, repeatType: "loop", ease: "linear", duration: 0.5 }}
+                  transition={{
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    ease: "linear",
+                    duration: 0.5,
+                  }}
                 />
               </motion.div>
 
@@ -83,8 +89,6 @@ export function StartupIntro({ visible }: { visible: boolean }) {
                 <BrandText />
               </motion.div>
             </div>
-
-
           </motion.div>
         </motion.div>
       )}
@@ -96,9 +100,19 @@ export default StartupIntro;
 
 function BrandText() {
   return (
-    <div className="text-5xl font-extrabold tracking-tight brand-text">
-      <span className="brand-text-solid">ishinex</span>
-      <span aria-hidden="true" className="brand-text-shimmer">ishinex</span>
+    <div className="flex flex-col items-center">
+      {/* English name */}
+      <div className="text-5xl font-extrabold tracking-tight brand-text mb-1">
+        <span className="brand-text-solid text-cyan-400">ISHINEX</span>
+        <span aria-hidden="true" className="brand-text-shimmer text-cyan-400">
+          ISHINEX
+        </span>
+      </div>
+
+      {/* Japanese name */}
+      <div className="text-2xl font-bold tracking-wide text-orange-400">
+        イシネックス
+      </div>
     </div>
   );
 }

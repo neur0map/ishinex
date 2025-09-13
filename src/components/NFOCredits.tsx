@@ -4,8 +4,8 @@ import { X, Volume2, VolumeX, Github } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import asteriskLogo from "@/assets/nfo/asterisk-logo.png";
-import keygennMusic from "@/assets/nfo/ishinex-nfo.ogg";
+import appLogo from "../../src-tauri/icons/ishinex-logo.svg";
+import keygennMusic from "@/assets/nfo/opcode-nfo.ogg";
 
 interface NFOCreditsProps {
   /**
@@ -208,7 +208,7 @@ export const NFOCredits: React.FC<NFOCreditsProps> = ({ onClose }) => {
 
             {/* NFO Content */}
             <div className="relative h-[calc(100%-40px)] bg-background overflow-hidden">
-              {/* Asterisk Logo Section (Fixed at top) */}
+              {/* App Logo Section (Fixed at top) */}
               <div className="absolute top-0 left-0 right-0 bg-background z-10 pb-4 text-center">
                 <button
                   className="inline-block mt-4 hover:scale-110 transition-transform cursor-pointer"
@@ -217,11 +217,7 @@ export const NFOCredits: React.FC<NFOCreditsProps> = ({ onClose }) => {
                     await openUrl("https://asterisk.so");
                   }}
                 >
-                  <img
-                    src={asteriskLogo}
-                    alt="Asterisk"
-                    className="h-20 w-auto mx-auto filter brightness-0 invert opacity-90"
-                  />
+                  <img src={appLogo} alt="ishinex" className="h-20 w-auto mx-auto" />
                 </button>
                 <div className="text-muted-foreground text-sm font-mono mt-2 tracking-wider">
                   A strategic project by Asterisk

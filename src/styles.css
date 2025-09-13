@@ -34,6 +34,43 @@ body {
   overflow: hidden;
 }
 
+/* Subtle warm accent text utility (orange-400 vibe) */
+.accent-warm {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-wide);
+  color: #fb923c; /* tailwind orange-400 */
+}
+
+/* Warm brand color variables */
+:root {
+  --color-warm: #fb923c; /* Orange-400 */
+  --color-warm-bg: rgba(251, 146, 60, 0.12); /* ~12% tint */
+}
+
+/* Titlebar subtle warm tint */
+.titlebar { position: relative; }
+.titlebar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(251,146,60,0.06), transparent 70%);
+  pointer-events: none;
+}
+.titlebar::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(to right, transparent, rgba(251,146,60,0.28), transparent);
+  pointer-events: none;
+}
+
+/* Prefer warm hover in titlebar actions, overriding neutral accent hovers */
+.titlebar .warm-hover:hover {
+  background-color: var(--color-warm-bg) !important;
+  color: var(--color-foreground) !important;
+}
+
 /* Ensure the viewport itself clips fixed-position elements */
 html {
   border-radius: var(--radius-lg);
