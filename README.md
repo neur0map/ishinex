@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src-tauri/icons/ishinex-logo.png" alt="ISHINEX" width="360" />
+  <img src="src-tauri/icons/ishi-logo.png" alt="ISHINEX" width="360" />
 </p>
 
 # ishinex
