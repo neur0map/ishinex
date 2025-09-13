@@ -9,6 +9,9 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
 
+  // Base path for Tauri - use relative paths for assets
+  base: "./",
+
   // Path resolution
   resolve: {
     alias: {
@@ -42,19 +45,31 @@ export default defineConfig(async () => ({
   build: {
     // Increase chunk size warning limit to 2000 KB
     chunkSizeWarningLimit: 2000,
-    
+
     rollupOptions: {
       output: {
         // Manual chunks for better code splitting
         manualChunks: {
           // Vendor chunks
-          'react-vendor': ['react', 'react-dom'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-tooltip', '@radix-ui/react-switch', '@radix-ui/react-popover'],
-          'editor-vendor': ['@uiw/react-md-editor'],
-          'syntax-vendor': ['react-syntax-highlighter'],
+          "react-vendor": ["react", "react-dom"],
+          "ui-vendor": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-select",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-switch",
+            "@radix-ui/react-popover",
+          ],
+          "editor-vendor": ["@uiw/react-md-editor"],
+          "syntax-vendor": ["react-syntax-highlighter"],
           // Tauri and other utilities
-          'tauri': ['@tauri-apps/api', '@tauri-apps/plugin-dialog', '@tauri-apps/plugin-shell'],
-          'utils': ['date-fns', 'clsx', 'tailwind-merge'],
+          tauri: [
+            "@tauri-apps/api",
+            "@tauri-apps/plugin-dialog",
+            "@tauri-apps/plugin-shell",
+          ],
+          utils: ["date-fns", "clsx", "tailwind-merge"],
         },
       },
     },
