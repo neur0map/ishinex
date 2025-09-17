@@ -8,8 +8,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "build:dmg": "tauri build --bundles dmg",
+    "tauri": "CARGO_TARGET_DIR=./target tauri",
+    "build:dmg": "CARGO_TARGET_DIR=./target tauri build --bundles dmg",
     "check": "tsc --noEmit && cd src-tauri && cargo check"
   },
   "dependencies": {

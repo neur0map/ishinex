@@ -96,12 +96,40 @@ export const Settings: React.FC<SettingsProps> = ({ className }) => {
   const [tabPersistenceEnabled, setTabPersistenceEnabled] = useState(true);
   // Startup intro preference
   const [startupIntroEnabled, setStartupIntroEnabled] = useState(true);
+  // Provider binaries state
+  const [codexPath, setCodexPath] = useState<string>("");
+  const [codexVersion, setCodexVersion] = useState<string | null>(null);
+  const [codexLogin, setCodexLogin] = useState<{ logged_in: boolean; user?: string; error?: string } | null>(null);
+  const [geminiPath, setGeminiPath] = useState<string>("");
+  const [geminiVersion, setGeminiVersion] = useState<string | null>(null);
+  const [geminiLogin, setGeminiLogin] = useState<{ logged_in: boolean; user?: string; error?: string } | null>(null);
 
   // Load settings on mount
   useEffect(() => {
     loadSettings();
     loadClaudeBinaryPath();
     loadAnalyticsSettings();
+    // Load providers
+    (async () => {
+      try {
+        const [cp, cv, gp, gv, cl, gl] = await Promise.all([
+          api.getCodexBinaryPath().catch(() => "codex"),
+          api.checkCodexVersion().catch(() => null),
+          api.getGeminiBinaryPath().catch(() => "gemini"),
+          api.checkGeminiVersion().catch(() => null),
+          api.checkCodexLogin().catch(() => ({ logged_in: false } as any)),
+          api.checkGeminiLogin().catch(() => ({ logged_in: false } as any)),
+        ]);
+        setCodexPath(cp || "codex");
+        setCodexVersion(cv);
+        setGeminiPath(gp || "gemini");
+        setGeminiVersion(gv);
+        setCodexLogin(cl);
+        setGeminiLogin(gl);
+      } catch (e) {
+        console.warn("Failed to load provider info", e);
+      }
+    })();
     // Load tab persistence setting
     setTabPersistenceEnabled(TabPersistenceService.isEnabled());
     // Load startup intro setting (default to true if not set)
@@ -423,7 +451,7 @@ export const Settings: React.FC<SettingsProps> = ({ className }) => {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="grid grid-cols-8 w-full mb-6 h-auto p-1">
+              <TabsList className="grid grid-cols-9 w-full mb-6 h-auto p-1">
                 <TabsTrigger value="general" className="py-2.5 px-3">
                   General
                 </TabsTrigger>
@@ -447,6 +475,9 @@ export const Settings: React.FC<SettingsProps> = ({ className }) => {
                 </TabsTrigger>
                 <TabsTrigger value="proxy" className="py-2.5 px-3">
                   Proxy
+                </TabsTrigger>
+                <TabsTrigger value="providers" className="py-2.5 px-3">
+                  Providers
                 </TabsTrigger>
               </TabsList>
 
@@ -1246,6 +1277,182 @@ export const Settings: React.FC<SettingsProps> = ({ className }) => {
                         ~/.claude/settings.json
                       </p>
                     </div>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              {/* Providers */}
+              <TabsContent value="providers" className="space-y-6">
+                <Card className="p-6">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-heading-4">AI CLI Providers</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Manage Codex and Gemini CLI integration
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Codex */}
+                    <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-label">OpenAI Codex CLI</h4>
+                          <p className="text-caption text-muted-foreground">Binary + login status</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-xs text-muted-foreground">
+                            {codexVersion ? `Version: ${codexVersion}` : 'Version: Unknown'}
+                          </div>
+                          <div className={cn("text-xs px-2 py-0.5 rounded", codexLogin?.logged_in ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400") }>
+                            {codexLogin?.logged_in ? (codexLogin?.user ? `Logged in as ${codexLogin.user}` : 'Logged in') : 'Not logged in'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input value={codexPath} onChange={(e) => setCodexPath(e.target.value)} className="font-mono text-xs" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const newPath = await api.getCodexBinaryPath();
+                              setCodexPath(newPath);
+                              const v = await api.checkCodexVersion();
+                              setCodexVersion(v);
+                              const s = await api.checkCodexLogin();
+                              setCodexLogin(s);
+                              setToast({ message: 'Codex path detected', type: 'success' });
+                            } catch (e) {
+                              setToast({ message: 'Failed to detect Codex path', type: 'error' });
+                            }
+                          }}
+                        >Detect</Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await api.setCodexBinaryPath(codexPath);
+                              const v = await api.checkCodexVersion();
+                              setCodexVersion(v);
+                              const s = await api.checkCodexLogin();
+                              setCodexLogin(s);
+                              setToast({ message: 'Codex path saved', type: 'success' });
+                            } catch (e) {
+                              setToast({ message: 'Failed to save Codex path', type: 'error' });
+                            }
+                          }}
+                        >Save</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await api.loginCodex();
+                              setToast({ message: 'Launched Codex login', type: 'success' });
+                              setTimeout(async () => {
+                                const s = await api.checkCodexLogin();
+                                setCodexLogin(s);
+                              }, 1500);
+                            } catch (e) {
+                              setToast({ message: 'Failed to launch Codex login', type: 'error' });
+                            }
+                          }}
+                        >Login</Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const s = await api.checkCodexLogin();
+                            setCodexLogin(s);
+                          }}
+                        >Refresh</Button>
+                      </div>
+                    </div>
+
+                    {/* Gemini */}
+                    <div className="space-y-3 border rounded-lg p-4 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-label">Google Gemini CLI</h4>
+                          <p className="text-caption text-muted-foreground">Binary + login status</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-xs text-muted-foreground">
+                            {geminiVersion ? `Version: ${geminiVersion}` : 'Version: Unknown'}
+                          </div>
+                          <div className={cn("text-xs px-2 py-0.5 rounded", geminiLogin?.logged_in ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400") }>
+                            {geminiLogin?.logged_in ? (geminiLogin?.user ? `Logged in as ${geminiLogin.user}` : 'Logged in') : 'Not logged in'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input value={geminiPath} onChange={(e) => setGeminiPath(e.target.value)} className="font-mono text-xs" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const newPath = await api.getGeminiBinaryPath();
+                              setGeminiPath(newPath);
+                              const v = await api.checkGeminiVersion();
+                              setGeminiVersion(v);
+                              const s = await api.checkGeminiLogin();
+                              setGeminiLogin(s);
+                              setToast({ message: 'Gemini path detected', type: 'success' });
+                            } catch (e) {
+                              setToast({ message: 'Failed to detect Gemini path', type: 'error' });
+                            }
+                          }}
+                        >Detect</Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await api.setGeminiBinaryPath(geminiPath);
+                              const v = await api.checkGeminiVersion();
+                              setGeminiVersion(v);
+                              const s = await api.checkGeminiLogin();
+                              setGeminiLogin(s);
+                              setToast({ message: 'Gemini path saved', type: 'success' });
+                            } catch (e) {
+                              setToast({ message: 'Failed to save Gemini path', type: 'error' });
+                            }
+                          }}
+                        >Save</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await api.loginGemini();
+                              setToast({ message: 'Launched Gemini login', type: 'success' });
+                              setTimeout(async () => {
+                                const s = await api.checkGeminiLogin();
+                                setGeminiLogin(s);
+                              }, 1500);
+                            } catch (e) {
+                              setToast({ message: 'Failed to launch Gemini login', type: 'error' });
+                            }
+                          }}
+                        >Login</Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const s = await api.checkGeminiLogin();
+                            setGeminiLogin(s);
+                          }}
+                        >Refresh</Button>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Note: These CLIs manage authentication themselves. If you see auth errors in chat, run the login flow here or in your terminal.
+                    </p>
                   </div>
                 </Card>
               </TabsContent>

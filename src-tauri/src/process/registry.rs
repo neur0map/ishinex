@@ -14,6 +14,11 @@ pub enum ProcessType {
     ClaudeSession {
         session_id: String,
     },
+    /// Generic chat session for other providers (e.g., Codex, Gemini)
+    ChatSession {
+        session_id: String,
+        provider: String,
+    },
 }
 
 /// Information about a running agent process
@@ -196,6 +201,73 @@ impl ProcessRegistry {
                 }
             })
             .map(|handle| handle.info.clone()))
+    }
+
+    /// Get a chat session by session ID and provider
+    #[allow(dead_code)]
+    pub fn get_chat_session_by_id(&self, session_id: &str, provider: &str) -> Result<Option<ProcessInfo>, String> {
+        let processes = self.processes.lock().map_err(|e| e.to_string())?;
+        Ok(processes
+            .values()
+            .find(|handle| {
+                match &handle.info.process_type {
+                    ProcessType::ChatSession { session_id: sid, provider: p } => sid == session_id && p == provider,
+                    _ => false,
+                }
+            })
+            .map(|handle| handle.info.clone()))
+    }
+
+    /// Register a new generic chat session for a provider (without child process)
+    pub fn register_chat_session(
+        &self,
+        session_id: String,
+        provider: String,
+        pid: u32,
+        project_path: String,
+        task: String,
+        model: String,
+    ) -> Result<i64, String> {
+        let run_id = self.generate_id()?;
+
+        let process_info = ProcessInfo {
+            run_id,
+            process_type: ProcessType::ChatSession { session_id, provider },
+            pid,
+            started_at: Utc::now(),
+            project_path,
+            task,
+            model,
+        };
+
+        let mut processes = self.processes.lock().map_err(|e| e.to_string())?;
+        let process_handle = ProcessHandle {
+            info: process_info,
+            child: Arc::new(Mutex::new(None)),
+            live_output: Arc::new(Mutex::new(String::new())),
+        };
+        processes.insert(run_id, process_handle);
+        Ok(run_id)
+    }
+
+    /// Get all running chat sessions for a specific provider (or all if None)
+    pub fn get_running_chat_sessions(&self, provider: Option<&str>) -> Result<Vec<ProcessInfo>, String> {
+        let processes = self.processes.lock().map_err(|e| e.to_string())?;
+        Ok(processes
+            .values()
+            .filter_map(|handle| {
+                match &handle.info.process_type {
+                    ProcessType::ChatSession { provider: p, .. } => {
+                        if let Some(filter) = provider {
+                            if p == filter { Some(handle.info.clone()) } else { None }
+                        } else {
+                            Some(handle.info.clone())
+                        }
+                    }
+                    _ => None,
+                }
+            })
+            .collect())
     }
 
     /// Unregister a process (called when it completes)

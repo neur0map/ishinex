@@ -7,7 +7,8 @@ import {
   ChevronUp,
   X,
   Hash,
-  Wrench
+  Wrench,
+  ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,7 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
   className,
   onStreamingChange,
   onProjectPathChange,
+  onBack,
 }) => {
   const [projectPath] = useState(initialProjectPath || session?.project_path || "");
   const [messages, setMessages] = useState<ClaudeStreamMessage[]>([]);
@@ -90,11 +92,12 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [showForkDialog, setShowForkDialog] = useState(false);
   const [showSlashCommandsSettings, setShowSlashCommandsSettings] = useState(false);
+  const [unifyLoading, setUnifyLoading] = useState(false);
   const [forkCheckpointId, setForkCheckpointId] = useState<string | null>(null);
   const [forkSessionName, setForkSessionName] = useState("");
   
   // Queued prompts state
-  const [queuedPrompts, setQueuedPrompts] = useState<Array<{ id: string; prompt: string; model: "sonnet" | "opus" }>>([]);
+  const [queuedPrompts, setQueuedPrompts] = useState<Array<{ id: string; prompt: string; provider: 'claude' | 'codex' | 'gemini'; model: string }>>([]);
   
   // New state for preview feature
   const [showPreview, setShowPreview] = useState(false);
@@ -110,7 +113,8 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
   const unlistenRefs = useRef<UnlistenFn[]>([]);
   const hasActiveSessionRef = useRef(false);
   const floatingPromptRef = useRef<FloatingPromptInputRef>(null);
-  const queuedPromptsRef = useRef<Array<{ id: string; prompt: string; model: "sonnet" | "opus" }>>([]);
+  const queuedPromptsRef = useRef<Array<{ id: string; prompt: string; provider: 'claude' | 'codex' | 'gemini'; model: string }>>([]);
+  const currentProviderRef = useRef<'claude' | 'codex' | 'gemini'>('claude');
   const isMountedRef = useRef(true);
   const isListeningRef = useRef(false);
   const sessionStartTime = useRef<number>(Date.now());
@@ -338,7 +342,10 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
   };
 
   const checkForActiveSession = async () => {
-    // If we have a session prop, check if it's still active
+    // If we have a session prop, check if it's still active (Claude only)
+    if (currentProviderRef.current !== 'claude') {
+      return;
+    }
     if (session) {
       try {
         const activeSessions = await api.listRunningClaudeSessions();
@@ -430,8 +437,9 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
 
   // Project path selection handled by parent tab controls
 
-  const handleSendPrompt = async (prompt: string, model: "sonnet" | "opus") => {
+  const handleSendPrompt = async (prompt: string, provider: 'claude' | 'codex' | 'gemini', model: string) => {
     console.log('[ClaudeCodeSession] handleSendPrompt called with:', { prompt, model, projectPath, claudeSessionId, effectiveSession });
+    currentProviderRef.current = provider;
     
     if (!projectPath) {
       setError("Please select a project directory first");
@@ -443,6 +451,7 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
       const newPrompt = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         prompt,
+        provider,
         model
       };
       setQueuedPrompts(prev => [...prev, newPrompt]);
@@ -484,21 +493,22 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
         console.log('[ClaudeCodeSession] Setting up generic event listeners first');
 
         let currentSessionId: string | null = claudeSessionId || effectiveSession?.id || null;
+        const eventPrefix = provider === 'claude' ? 'claude' : provider; // 'codex' or 'gemini'
 
         // Helper to attach session-specific listeners **once we are sure**
         const attachSessionSpecificListeners = async (sid: string) => {
           console.log('[ClaudeCodeSession] Attaching session-specific listeners for', sid);
 
-          const specificOutputUnlisten = await listen<string>(`claude-output:${sid}`, (evt) => {
+          const specificOutputUnlisten = await listen<string>(`${eventPrefix}-output:${sid}`, (evt) => {
             handleStreamMessage(evt.payload);
           });
 
-          const specificErrorUnlisten = await listen<string>(`claude-error:${sid}`, (evt) => {
+          const specificErrorUnlisten = await listen<string>(`${eventPrefix}-error:${sid}`, (evt) => {
             console.error('Claude error (scoped):', evt.payload);
             setError(evt.payload);
           });
 
-          const specificCompleteUnlisten = await listen<boolean>(`claude-complete:${sid}`, (evt) => {
+          const specificCompleteUnlisten = await listen<boolean>(`${eventPrefix}-complete:${sid}`, (evt) => {
             console.log('[ClaudeCodeSession] Received claude-complete (scoped):', evt.payload);
             processComplete(evt.payload);
           });
@@ -509,7 +519,7 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
         };
 
         // Generic listeners (catch-all)
-        const genericOutputUnlisten = await listen<string>('claude-output', async (event) => {
+        const genericOutputUnlisten = await listen<string>(`${eventPrefix}-output`, async (event) => {
           handleStreamMessage(event.payload);
 
           // Attempt to extract session_id on the fly (for the very first init)
@@ -722,17 +732,17 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
             
             // Small delay to ensure UI updates
             setTimeout(() => {
-              handleSendPrompt(nextPrompt.prompt, nextPrompt.model);
+              handleSendPrompt(nextPrompt.prompt, nextPrompt.provider, nextPrompt.model);
             }, 100);
           }
         };
 
-        const genericErrorUnlisten = await listen<string>('claude-error', (evt) => {
+        const genericErrorUnlisten = await listen<string>(`${eventPrefix}-error`, (evt) => {
           console.error('Claude error:', evt.payload);
           setError(evt.payload);
         });
 
-        const genericCompleteUnlisten = await listen<boolean>('claude-complete', (evt) => {
+        const genericCompleteUnlisten = await listen<boolean>(`${eventPrefix}-complete`, (evt) => {
           console.log('[ClaudeCodeSession] Received claude-complete (generic):', evt.payload);
           processComplete(evt.payload);
         });
@@ -799,7 +809,7 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
         });
 
         // Execute the appropriate command
-        if (effectiveSession && !isFirstPrompt) {
+        if (provider === 'claude' && effectiveSession && !isFirstPrompt) {
           console.log('[ClaudeCodeSession] Resuming session:', effectiveSession.id);
           trackEvent.sessionResumed(effectiveSession.id);
           trackEvent.modelSelected(model);
@@ -809,7 +819,13 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
           setIsFirstPrompt(false);
           trackEvent.sessionCreated(model, 'prompt_input');
           trackEvent.modelSelected(model);
-          await api.executeClaudeCode(projectPath, prompt, model);
+          if (provider === 'claude') {
+            await api.executeClaudeCode(projectPath, prompt, model);
+          } else if (provider === 'codex') {
+            await api.executeCodexChat(projectPath, prompt, model);
+          } else {
+            await api.executeGeminiChat(projectPath, prompt, model);
+          }
         }
       }
     } catch (err) {
@@ -824,6 +840,20 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
     const jsonl = rawJsonlOutput.join('\n');
     await navigator.clipboard.writeText(jsonl);
     setCopyPopoverOpen(false);
+  };
+
+  const handleUnifyHistories = async () => {
+    if (!projectPath) return;
+    try {
+      setUnifyLoading(true);
+      const result = await api.unifyProviderHistories(projectPath);
+      console.log('Unified history created:', result);
+    } catch (e) {
+      console.error('Failed to unify histories:', e);
+      setError('Failed to unify histories');
+    } finally {
+      setUnifyLoading(false);
+    }
   };
 
   const handleCopyAsMarkdown = async () => {
@@ -911,13 +941,19 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
   };
 
   const handleCancelExecution = async () => {
-    if (!claudeSessionId || !isLoading) return;
+    if (!isLoading) return;
     
     try {
       const sessionStartTime = messages.length > 0 ? messages[0].timestamp || Date.now() : Date.now();
       const duration = Date.now() - sessionStartTime;
       
-      await api.cancelClaudeExecution(claudeSessionId);
+      if (currentProviderRef.current === 'claude') {
+        await api.cancelClaudeExecution(claudeSessionId || undefined);
+      } else if (currentProviderRef.current === 'codex') {
+        await api.cancelCodexExecution();
+      } else {
+        await api.cancelGeminiExecution();
+      }
       
       // Calculate metrics for enhanced analytics
       const metrics = sessionMetrics.current;
@@ -1248,6 +1284,15 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
             <SplitPane
               left={
                 <div className="h-full flex flex-col">
+                  {session && (
+                    <div className="sticky top-0 z-20 -mx-6 px-6 py-2 bg-background/80 backdrop-blur border-b border-border/50 flex items-center justify-between">
+                      <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </Button>
+                      <span className="text-xs text-muted-foreground">Session {session.id.slice(-8)}</span>
+                    </div>
+                  )}
                   {projectPathInput}
                   {messagesList}
                 </div>
@@ -1270,6 +1315,15 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
           ) : (
             // Original layout when no preview
             <div className="h-full flex flex-col max-w-6xl mx-auto px-6">
+              {session && (
+                <div className="sticky top-0 z-20 -mx-6 px-6 py-2 bg-background/80 backdrop-blur border-b border-border/50 flex items-center justify-between">
+                  <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                  <span className="text-xs text-muted-foreground">Session {session.id.slice(-8)}</span>
+                </div>
+              )}
               {projectPathInput}
               {messagesList}
               
@@ -1327,7 +1381,7 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
                           <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                            {queuedPrompt.model === "opus" ? "Opus" : "Sonnet"}
+                            {queuedPrompt.provider.toUpperCase()} · {queuedPrompt.model}
                           </span>
                         </div>
                         <p className="text-sm line-clamp-2 break-words">{queuedPrompt.prompt}</p>
@@ -1505,6 +1559,22 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
                       align="end"
                     />
                   )}
+                  <TooltipSimple content="Unify provider histories for this project" side="top">
+                    <motion.div
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={!projectPath || unifyLoading}
+                        onClick={handleUnifyHistories}
+                        className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                      >
+                        <Hash className={cn("h-3.5 w-3.5", unifyLoading && "animate-spin")}/>
+                      </Button>
+                    </motion.div>
+                  </TooltipSimple>
                   <TooltipSimple content="Checkpoint Settings" side="top">
                     <motion.div
                       whileTap={{ scale: 0.97 }}

@@ -1071,6 +1071,87 @@ export const api = {
     return invoke("get_claude_session_output", { sessionId });
   },
 
+  // Codex (OpenAI) provider APIs
+  async executeCodexChat(projectPath: string, prompt: string, model: string): Promise<void> {
+    return invoke("execute_codex_chat", { projectPath, prompt, model });
+  },
+  async resumeCodexChat(projectPath: string, sessionId: string, prompt: string, model: string): Promise<void> {
+    return invoke("resume_codex_chat", { projectPath, sessionId, prompt, model });
+  },
+  async cancelCodexExecution(): Promise<void> {
+    return invoke("cancel_codex_execution");
+  },
+  async listRunningCodexSessions(): Promise<any[]> {
+    return invoke("list_running_codex_sessions");
+  },
+  async getCodexBinaryPath(): Promise<string> {
+    return invoke("get_codex_binary_path");
+  },
+  async setCodexBinaryPath(path: string): Promise<void> {
+    return invoke("set_codex_binary_path", { path });
+  },
+  async checkCodexVersion(): Promise<string | null> {
+    return invoke("check_codex_version");
+  },
+  async checkCodexLogin(): Promise<{ logged_in: boolean; user?: string; error?: string }> {
+    return invoke("check_codex_login");
+  },
+  async getCodexDefaultModel(): Promise<string | null> {
+    return invoke("get_codex_default_model");
+  },
+  async setCodexDefaultModel(model: string): Promise<void> {
+    return invoke("set_codex_default_model", { model });
+  },
+  async listCodexModels(): Promise<string[]> {
+    return invoke("list_codex_models");
+  },
+  async loginCodex(): Promise<void> {
+    return invoke("login_codex");
+  },
+
+  // Gemini provider APIs
+  async executeGeminiChat(projectPath: string, prompt: string, model: string): Promise<void> {
+    return invoke("execute_gemini_chat", { projectPath, prompt, model });
+  },
+  async resumeGeminiChat(projectPath: string, sessionId: string, prompt: string, model: string): Promise<void> {
+    return invoke("resume_gemini_chat", { projectPath, sessionId, prompt, model });
+  },
+  async cancelGeminiExecution(): Promise<void> {
+    return invoke("cancel_gemini_execution");
+  },
+  async listRunningGeminiSessions(): Promise<any[]> {
+    return invoke("list_running_gemini_sessions");
+  },
+  async getGeminiBinaryPath(): Promise<string> {
+    return invoke("get_gemini_binary_path");
+  },
+  async setGeminiBinaryPath(path: string): Promise<void> {
+    return invoke("set_gemini_binary_path", { path });
+  },
+  async checkGeminiVersion(): Promise<string | null> {
+    return invoke("check_gemini_version");
+  },
+  async checkGeminiLogin(): Promise<{ logged_in: boolean; user?: string; error?: string }> {
+    return invoke("check_gemini_login");
+  },
+  async getGeminiDefaultModel(): Promise<string | null> {
+    return invoke("get_gemini_default_model");
+  },
+  async setGeminiDefaultModel(model: string): Promise<void> {
+    return invoke("set_gemini_default_model", { model });
+  },
+  async listGeminiModels(): Promise<string[]> {
+    return invoke("list_gemini_models");
+  },
+  async loginGemini(): Promise<void> {
+    return invoke("login_gemini");
+  },
+
+  // Unified history
+  async unifyProviderHistories(projectPath: string): Promise<{ unified_path: string; total_messages: number; sources: { provider: string; count: number }[] }> {
+    return invoke("unify_provider_histories", { projectPath });
+  },
+
   /**
    * Lists files and directories in a given path
    */

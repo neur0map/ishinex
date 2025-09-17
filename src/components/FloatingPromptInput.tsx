@@ -15,6 +15,7 @@ import {
   
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PROVIDERS, type ProviderId, getProvider } from "@/lib/providers";
 import { Button } from "@/components/ui/button";
 import { Popover } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,7 +30,7 @@ interface FloatingPromptInputProps {
   /**
    * Callback when prompt is sent
    */
-  onSend: (prompt: string, model: "sonnet" | "opus") => void;
+  onSend: (prompt: string, provider: ProviderId, model: string) => void;
   /**
    * Whether the input is loading
    */
@@ -38,10 +39,9 @@ interface FloatingPromptInputProps {
    * Whether the input is disabled
    */
   disabled?: boolean;
-  /**
-   * Default model to select
-   */
-  defaultModel?: "sonnet" | "opus";
+  /** Default provider and model */
+  defaultProvider?: ProviderId;
+  defaultModel?: string;
   /**
    * Project path for file picker
    */
@@ -204,7 +204,8 @@ const FloatingPromptInputInner = (
     onSend,
     isLoading = false,
     disabled = false,
-    defaultModel = "sonnet",
+    defaultProvider = "claude",
+    defaultModel,
     projectPath,
     className,
     onCancel,
@@ -213,10 +214,13 @@ const FloatingPromptInputInner = (
   ref: React.Ref<FloatingPromptInputRef>,
 ) => {
   const [prompt, setPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState<"sonnet" | "opus">(defaultModel);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderId>(defaultProvider);
+  const providerConfig = React.useMemo(() => getProvider(selectedProvider), [selectedProvider]);
+  const [selectedModel, setSelectedModel] = useState<string>(defaultModel || providerConfig.defaultModel);
   const [selectedThinkingMode, setSelectedThinkingMode] = useState<ThinkingMode>("auto");
   const [isExpanded, setIsExpanded] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [thinkingModePickerOpen, setThinkingModePickerOpen] = useState(false);
   const [showFilePicker, setShowFilePicker] = useState(false);
   const [filePickerQuery, setFilePickerQuery] = useState("");
@@ -442,12 +446,33 @@ const FloatingPromptInputInner = (
         finalPrompt = `${finalPrompt}.\n\n${thinkingMode.phrase}.`;
       }
       
-      onSend(finalPrompt, selectedModel);
+      onSend(finalPrompt, selectedProvider, selectedModel);
       setPrompt("");
       setEmbeddedImages([]);
       setTextareaHeight(48); // Reset height after sending
     }
   };
+
+  // Reset model when provider changes if current model not in provider list
+  useEffect(() => {
+    const cfg = getProvider(selectedProvider);
+    const models = selectedProvider === 'claude' ? MODELS.map(m => m.id) : cfg.models.map(m => m.id);
+    if (!models.includes(selectedModel)) {
+      setSelectedModel(cfg.defaultModel);
+    }
+    // Try to load provider default model dynamically
+    (async () => {
+      try {
+        if (selectedProvider === 'codex') {
+          const m = await api.getCodexDefaultModel();
+          if (m && typeof m === 'string') setSelectedModel(m);
+        } else if (selectedProvider === 'gemini') {
+          const m = await api.getGeminiDefaultModel();
+          if (m && typeof m === 'string') setSelectedModel(m);
+        }
+      } catch (_e) {}
+    })();
+  }, [selectedProvider]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -779,7 +804,11 @@ const FloatingPromptInputInner = (
     setPrompt(newPrompt.trim());
   };
 
-  const selectedModelData = MODELS.find(m => m.id === selectedModel) || MODELS[0];
+  const selectedModelData = (
+    selectedProvider === 'claude'
+      ? (MODELS.find(m => m.id === (selectedModel as any)) || MODELS[0])
+      : { id: selectedModel, name: selectedModel, description: "", icon: <Zap className="h-3.5 w-3.5" />, shortName: (selectedModel[0] || 'M').toUpperCase(), color: "text-primary" as const }
+  );
 
   return (
     <TooltipProvider>
@@ -846,6 +875,48 @@ const FloatingPromptInputInner = (
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">Provider:</span>
+                    <Popover
+                      trigger={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setProviderPickerOpen(!providerPickerOpen)}
+                          className="gap-2"
+                        >
+                          {getProvider(selectedProvider).name}
+                        </Button>
+                      }
+                      content={
+                        <div className="w-[260px] p-1">
+                          {PROVIDERS.map((p) => (
+                            <button
+                              key={p.id}
+                              onClick={() => {
+                                setSelectedProvider(p.id);
+                                setProviderPickerOpen(false);
+                              }}
+                              className={cn(
+                                "w-full flex items-start gap-3 p-3 rounded-md transition-colors text-left",
+                                "hover:bg-accent",
+                                selectedProvider === p.id && "bg-accent"
+                              )}
+                            >
+                              <div className="flex-1 space-y-1">
+                                <div className="font-medium text-sm">{p.name}</div>
+                                <div className="text-xs text-muted-foreground">{p.id}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      }
+                      open={providerPickerOpen}
+                      onOpenChange={setProviderPickerOpen}
+                      align="start"
+                      side="top"
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Model:</span>
                     <Popover
@@ -864,12 +935,20 @@ const FloatingPromptInputInner = (
                       }
                       content={
                         <div className="w-[300px] p-1">
-                          {MODELS.map((model) => (
+                          {(selectedProvider === 'claude' ? MODELS : getProvider(selectedProvider).models.map(m => ({ id: m.id, name: m.name, description: '', icon: <Zap className="h-3.5 w-3.5" />, shortName: m.id.slice(0,1).toUpperCase(), color: 'text-primary' as const }))).map((model) => (
                             <button
                               key={model.id}
                               onClick={() => {
                                 setSelectedModel(model.id);
                                 setModelPickerOpen(false);
+                                // Persist as provider default
+                                try {
+                                  if (selectedProvider === 'codex') {
+                                    api.setCodexDefaultModel(model.id);
+                                  } else if (selectedProvider === 'gemini') {
+                                    api.setGeminiDefaultModel(model.id);
+                                  }
+                                } catch (_e) {}
                               }}
                               className={cn(
                                 "w-full flex items-start gap-3 p-3 rounded-md transition-colors text-left",
@@ -1013,8 +1092,49 @@ const FloatingPromptInputInner = (
 
           <div className="p-3">
             <div className="flex items-end gap-2">
-              {/* Model & Thinking Mode Selectors - Left side, fixed at bottom */}
+              {/* Provider, Model & Thinking Mode Selectors - Left side, fixed at bottom */}
               <div className="flex items-center gap-1 shrink-0 mb-1">
+                <Popover
+                  trigger={
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.div whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={disabled}
+                            className="h-9 px-2 hover:bg-accent/50 gap-1"
+                            onClick={() => setProviderPickerOpen(!providerPickerOpen)}
+                          >
+                            <span className="text-[10px] font-bold opacity-70">{getProvider(selectedProvider).id.toUpperCase()}</span>
+                            <ChevronUp className="h-3 w-3 ml-0.5 opacity-50" />
+                          </Button>
+                        </motion.div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs font-medium">Provider: {getProvider(selectedProvider).name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  }
+                  content={
+                    <div className="w-[240px] p-1">
+                      {PROVIDERS.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setSelectedProvider(p.id); setProviderPickerOpen(false); }}
+                          className={cn("w-full text-left px-3 py-2 rounded-md transition-colors", selectedProvider === p.id ? "bg-accent" : "hover:bg-accent")}
+                        >
+                          <div className="font-medium text-sm">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">{p.id}</div>
+                        </button>
+                      ))}
+                    </div>
+                  }
+                  open={providerPickerOpen}
+                  onOpenChange={setProviderPickerOpen}
+                  align="start"
+                  side="top"
+                />
                 <Popover
                   trigger={
                     <Tooltip>
@@ -1047,7 +1167,7 @@ const FloatingPromptInputInner = (
                   }
                 content={
                   <div className="w-[300px] p-1">
-                    {MODELS.map((model) => (
+                    {(selectedProvider === 'claude' ? MODELS : getProvider(selectedProvider).models.map(m => ({ id: m.id, name: m.name, description: '', icon: <Zap className="h-3.5 w-3.5" />, shortName: m.id.slice(0,1).toUpperCase(), color: 'text-primary' as const }))).map((model) => (
                       <button
                         key={model.id}
                         onClick={() => {

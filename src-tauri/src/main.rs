@@ -3,8 +3,11 @@
 
 mod checkpoint;
 mod claude_binary;
+mod codex_binary;
 mod commands;
+mod gemini_binary;
 mod process;
+mod unified_history;
 
 use checkpoint::state::CheckpointState;
 use commands::agents::{
@@ -30,6 +33,16 @@ use commands::claude::{
     track_checkpoint_message, track_session_messages, update_checkpoint_settings,
     update_hooks_config, validate_hook_command, ClaudeProcessState,
 };
+use commands::codex::{
+    cancel_codex_execution, check_codex_login, check_codex_version, execute_codex_chat, get_codex_binary_path,
+    get_codex_default_model, list_codex_models, list_running_codex_sessions, login_codex, set_codex_binary_path,
+    set_codex_default_model, CodexProcessState, resume_codex_chat,
+};
+use commands::gemini::{
+    cancel_gemini_execution, check_gemini_login, check_gemini_version, execute_gemini_chat, get_gemini_binary_path,
+    get_gemini_default_model, list_gemini_models, list_running_gemini_sessions, login_gemini, set_gemini_binary_path,
+    set_gemini_default_model, GeminiProcessState, resume_gemini_chat,
+};
 use commands::mcp::{
     mcp_add, mcp_add_from_claude_desktop, mcp_add_json, mcp_get, mcp_get_server_status, mcp_list,
     mcp_read_project_config, mcp_remove, mcp_reset_project_choices, mcp_save_project_config,
@@ -44,6 +57,7 @@ use commands::storage::{
 use commands::usage::{
     get_session_stats, get_usage_by_date_range, get_usage_details, get_usage_stats,
 };
+use unified_history::unify_provider_histories;
 use process::ProcessRegistryState;
 use std::sync::Mutex;
 use tauri::Manager;
@@ -147,6 +161,10 @@ fn main() {
             // Initialize Claude process state
             app.manage(ClaudeProcessState::default());
 
+            // Initialize additional provider process states
+            app.manage(CodexProcessState::default());
+            app.manage(GeminiProcessState::default());
+
             // Apply window vibrancy with rounded corners on macOS
             #[cfg(target_os = "macos")]
             {
@@ -205,6 +223,32 @@ fn main() {
             cancel_claude_execution,
             list_running_claude_sessions,
             get_claude_session_output,
+            // Codex provider
+            execute_codex_chat,
+            resume_codex_chat,
+            cancel_codex_execution,
+            list_running_codex_sessions,
+            get_codex_binary_path,
+            set_codex_binary_path,
+            check_codex_version,
+            check_codex_login,
+            get_codex_default_model,
+            set_codex_default_model,
+            list_codex_models,
+            login_codex,
+            // Gemini provider
+            execute_gemini_chat,
+            resume_gemini_chat,
+            cancel_gemini_execution,
+            list_running_gemini_sessions,
+            get_gemini_binary_path,
+            set_gemini_binary_path,
+            check_gemini_version,
+            check_gemini_login,
+            get_gemini_default_model,
+            set_gemini_default_model,
+            list_gemini_models,
+            login_gemini,
             list_directory_contents,
             search_files,
             get_recently_modified_files,
@@ -290,6 +334,8 @@ fn main() {
             // Proxy Settings
             get_proxy_settings,
             save_proxy_settings,
+            // Unified history
+            unify_provider_histories,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

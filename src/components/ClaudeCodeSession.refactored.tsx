@@ -315,7 +315,7 @@ export const ClaudeCodeSession: React.FC<ClaudeCodeSessionProps> = ({
         {projectPath && (
           <FloatingPromptInput
             ref={promptInputRef}
-            onSend={handleSendPrompt}
+            onSend={(prompt, _provider, model) => handleSendPrompt(prompt, model as any)}
             disabled={!projectPath}
             isLoading={isStreaming}
             onCancel={async () => {
